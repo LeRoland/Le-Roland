@@ -1,0 +1,70 @@
+name: Publier un avis
+
+on:
+  workflow_dispatch:
+    inputs:
+      nom:
+        description: "Prénom du voyageur"
+        required: true
+        type: string
+
+      note:
+        description: "Note (1 à 5)"
+        required: true
+        type: choice
+        options:
+          - "5"
+          - "4"
+          - "3"
+          - "2"
+          - "1"
+
+      texte:
+        description: "Texte de l'avis"
+        required: true
+        type: string
+
+jobs:
+  publier:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Récupérer le dépôt
+        uses: actions/checkout@v4
+
+      - name: Ajouter l'avis
+        env:
+          NOM: ${{ inputs.nom }}
+          NOTE: ${{ inputs.note }}
+          TEXTE: ${{ inputs.texte }}
+        run: |
+          python - <<'PY'
+          import json
+          import os
+
+          fichier = "avis.json"
+
+          with open(fichier, "r", encoding="utf-8") as f:
+              avis = json.load(f)
+
+          avis.append({
+              "nom": os.environ["NOM"],
+              "note": int(os.environ["NOTE"]),
+              "texte": os.environ["TEXTE"]
+          })
+
+          with open(fichier, "w", encoding="utf-8") as f:
+              json.dump(avis, f, ensure_ascii=False, indent=2)
+              f.write("\n")
+          PY
+
+      - name: Publier sur GitHub
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add avis.json
+          git commit -m "Publier un nouvel avis"
+          git push
