@@ -426,23 +426,7 @@
 
     <div class="reviews-layout">
       <div class="reviews-list" id="reviewsList">
-        <article class="review-card">
-  <div class="review-stars">★★★★★</div>
-  <p class="review-text">« Super séjour dans ce chalet ! 🏔️ Le chalet est vraiment top : très agréable, confortable, bien équipé et avec une vue magnifique sur les montagnes. Tout est pensé pour passer un excellent séjour en famille ou entre amis. L’emplacement est idéal pour profiter pleinement de la station. Nous avons adoré notre séjour et nous reviendrons avec grand plaisir ! 😊 »</p>
-  <div class="review-author">Laura — Séjour 2026</div>
-</article>
-        <!--
-          PROPRIÉTAIRE : pour publier un avis reçu par email, dupliquez le bloc ci-dessous
-          à l'intérieur de #reviewsList (et retirez le <p class="reviews-empty"> une fois
-          le premier avis ajouté) :
-
-          <article class="review-card">
-            <div class="review-stars">★★★★★</div>
-            <p class="review-text">« Texte de l'avis... »</p>
-            <div class="review-author">Prénom N. — Séjour de janvier 2027</div>
-          </article>
-        -->
-      </div>
+       </div>
 
       <form id="reviewForm" class="review-form">
         <h3>Laisser un avis</h3>
@@ -647,6 +631,23 @@ ${f.texte.value}`
     window.location.href = `mailto:Sci3mk@gmail.com?subject=${subject}&body=${body}`;
     document.getElementById('reviewStatus').textContent = "Merci ! Votre messagerie va s'ouvrir — votre avis sera publié ici après lecture.";
   });
+    // Chargement automatique des avis publiés
+  fetch('avis.json')
+    .then(response => response.json())
+    .then(avis => {
+      const liste = document.getElementById('reviewsList');
+
+      liste.innerHTML = avis.map(a => `
+        <article class="review-card">
+          <div class="review-stars">${'★'.repeat(a.note)}${'☆'.repeat(5 - a.note)}</div>
+          <p class="review-text">« ${a.texte} »</p>
+          <div class="review-author">${a.nom}</div>
+        </article>
+      `).join('');
+    })
+    .catch(error => {
+      console.error('Impossible de charger les avis :', error);
+    });
 </script>
 
 </body>
