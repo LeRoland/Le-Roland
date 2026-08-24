@@ -839,29 +839,80 @@
 </footer>
 
 <script>
-  // Header background on scroll
+  // =========================
+  // HEADER AU DÉFILEMENT
+  // =========================
+
   const header = document.getElementById('siteHeader');
+
   window.addEventListener('scroll', () => {
     header.classList.toggle('scrolled', window.scrollY > 40);
   });
 
-  // Mobile nav
+
+  // =========================
+  // MENU MOBILE
+  // =========================
+
   const nav = document.getElementById('mainNav');
-  document.getElementById('navToggle').addEventListener('click', () => nav.classList.toggle('open'));
-  nav.querySelectorAll('a').forEach(a => a.addEventListener('click', () => nav.classList.remove('open')));
+  const navToggle = document.getElementById('navToggle');
 
-  // Reveal on scroll
+  if (nav && navToggle) {
+
+    navToggle.addEventListener('click', () => {
+      nav.classList.toggle('open');
+    });
+
+    nav.querySelectorAll('a').forEach(a => {
+      a.addEventListener('click', () => {
+        nav.classList.remove('open');
+      });
+    });
+  }
+
+
+  // =========================
+  // ANIMATIONS AU DÉFILEMENT
+  // =========================
+
   const io = new IntersectionObserver((entries) => {
-    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('in'); });
-  }, { threshold: 0.12 });
-  document.querySelectorAll('.reveal').forEach(el => io.observe(
 
-  // Booking form -> mailto
-  document.getElementById('bookingForm').addEventListener('submit', function (e) {
-    e.preventDefault();
-    const f = e.target;
-    const subject = encodeURIComponent(`Demande de réservation — Le Roland (${f.arrivee.value} au ${f.depart.value})`);
-    const body = encodeURIComponent(
+    entries.forEach(e => {
+
+      if (e.isIntersecting) {
+        e.target.classList.add('in');
+      }
+
+    });
+
+  }, { threshold: 0.12 });
+
+
+  document.querySelectorAll('.reveal').forEach(el => {
+    io.observe(el);
+  });
+
+
+  // =========================
+  // FORMULAIRE RÉSERVATION
+  // =========================
+
+  const bookingForm =
+    document.getElementById('bookingForm');
+
+  if (bookingForm) {
+
+    bookingForm.addEventListener('submit', function (e) {
+
+      e.preventDefault();
+
+      const f = e.target;
+
+      const subject = encodeURIComponent(
+        `Demande de réservation — Le Roland (${f.arrivee.value} au ${f.depart.value})`
+      );
+
+      const body = encodeURIComponent(
 `Nom : ${f.nom.value}
 Téléphone : ${f.tel.value}
 Email : ${f.email.value}
@@ -871,530 +922,716 @@ Nombre de personnes : ${f.personnes.value}
 
 Message :
 ${f.message.value || "—"}`
-    );
-    window.location.href = `mailto:Sci3mk@gmail.com?subject=${subject}&body=${body}`;
-    document.getElementById('formStatus').textContent = "Votre messagerie va s'ouvrir avec la demande pré-remplie.";
-  });
+      );
 
-  // Review form -> mailto
-  document.getElementById('reviewForm').addEventListener('submit', function (e) {
-    e.preventDefault();
-    const f = e.target;
-    const subject = encodeURIComponent(`Nouvel avis — Le Roland (${f.nom.value})`);
-    const body = encodeURIComponent(
+      window.location.href =
+        `mailto:Sci3mk@gmail.com?subject=${subject}&body=${body}`;
+
+      const status =
+        document.getElementById('formStatus');
+
+      if (status) {
+        status.textContent =
+          "Votre messagerie va s'ouvrir avec la demande pré-remplie.";
+      }
+
+    });
+  }
+
+
+  // =========================
+  // FORMULAIRE AVIS
+  // =========================
+
+  const reviewForm =
+    document.getElementById('reviewForm');
+
+  if (reviewForm) {
+
+    reviewForm.addEventListener('submit', function (e) {
+
+      e.preventDefault();
+
+      const f = e.target;
+
+      const subject = encodeURIComponent(
+        `Nouvel avis — Le Roland (${f.nom.value})`
+      );
+
+      const body = encodeURIComponent(
 `Prénom : ${f.nom.value}
 Note : ${f.note.value}
 
 Avis :
 ${f.texte.value}`
-    );
-    window.location.href = `mailto:Sci3mk@gmail.com?subject=${subject}&body=${body}`;
-    document.getElementById('reviewStatus').textContent = "Merci ! Votre messagerie va s'ouvrir — votre avis sera publié ici après lecture.";
-  });
-    // Chargement automatique des avis publiés
-  fetch('avis.json')
-    .then(response => response.json())
-    .then(avis => {
-      const liste = document.getElementById('reviewsList');
-
-      liste.innerHTML = avis.map(a => `
-        <article class="review-card">
-          <div class="review-stars">${'★'.repeat(a.note)}${'☆'.repeat(5 - a.note)}</div>
-          <p class="review-text">« ${a.texte} »</p>
-          <div class="review-author">${a.nom}</div>
-        </article>
-      `).join('');
-    })
-    .catch(error => {
-      console.error('Impossible de charger les avis :', error);
-    });
-  
-  /* =========================
-   CALENDRIER DISPONIBILITÉS
-   ========================= */
-
-let disponibilites = [];
-
-// Premier mois affiché
-let moisActuel = new Date(2026, 7, 1); // août 2026
-
-const calendarGrid = document.getElementById("calendarGrid");
-const calendarMonth = document.getElementById("calendarMonth");
-const calendarDetails = document.getElementById("calendarDetails");
-const prevMonth = document.getElementById("prevMonth");
-const nextMonth = document.getElementById("nextMonth");
-
-
-/* =========================
-   OUTILS
-   ========================= */
-
-function creerDate(dateString) {
-  return new Date(dateString + "T12:00:00");
-}
-
-function formatDate(date) {
-  return new Intl.DateTimeFormat("fr-FR", {
-    day: "numeric",
-    month: "long",
-    year: "numeric"
-  }).format(date);
-}
-
-function formatPrix(prix) {
-  return Number(prix).toLocaleString("fr-FR") + " €";
-}
-
-
-/* =========================
-   TROUVER LA SEMAINE
-   ========================= */
-
-function trouverSemaine(date) {
-
-  const jour = new Date(date);
-  jour.setHours(12, 0, 0, 0);
-
-  /*
-    On cherche d'abord une période
-    renseignée dans disponibilites.json
-  */
-
-  const semaineExistante = disponibilites.find(semaine => {
-
-    const debut = creerDate(semaine.debut);
-    const fin = creerDate(semaine.fin);
-
-    return jour >= debut && jour < fin;
-  });
-
-  /*
-    Si elle existe dans le tableau,
-    on utilise exactement ses données.
-  */
-
-  if (semaineExistante) {
-    return semaineExistante;
-  }
-
-  /*
-    Sinon :
-    disponible automatiquement à 250 €.
-  */
-
-  const samedi = new Date(jour);
-
-  const jourSemaine = samedi.getDay();
-
-  /*
-    On retrouve le samedi correspondant.
-  */
-
-  let decalage;
-
-  if (jourSemaine === 6) {
-    decalage = 0;
-  } else if (jourSemaine === 0) {
-    decalage = -1;
-  } else {
-    decalage = 6 - jourSemaine;
-  }
-
-  samedi.setDate(
-    samedi.getDate() + decalage
-  );
-
-  samedi.setHours(12, 0, 0, 0);
-
-  const samediSuivant = new Date(samedi);
-
-  samediSuivant.setDate(
-    samediSuivant.getDate() + 7
-  );
-
-  return {
-    debut: samedi.toISOString().split("T")[0],
-    fin: samediSuivant.toISOString().split("T")[0],
-    prix: 250,
-    statut: "disponible",
-    automatique: true
-  };
-}
-
-
-/* =========================
-   DÉTAILS D'UNE SEMAINE
-   ========================= */
-
-function afficherDetails(semaine) {
-
-  const debut = creerDate(semaine.debut);
-  const fin = creerDate(semaine.fin);
-
-  let titre = "";
-  let message = "";
-  let bouton = "";
-
-  if (semaine.statut === "disponible") {
-
-    titre = "🟢 Disponible";
-
-    message =
-      "Cette semaine est disponible à la réservation.";
-
-    bouton = `
-      <a href="#reservation" class="calendar-book">
-        Demander à réserver
-      </a>
-    `;
-  }
-
-  else if (semaine.statut === "reserve") {
-
-    titre = "🔴 Réservé";
-
-    message =
-      "Cette semaine n'est plus disponible.";
-  }
-
-  else if (semaine.statut === "bloque") {
-
-    titre = "⚫ Indisponible";
-
-    message =
-      "Cette période est actuellement indisponible.";
-  }
-
-  calendarDetails.innerHTML = `
-    <h3>${titre}</h3>
-
-    <p>
-      <strong>
-        ${formatDate(debut)}
-        → 
-        ${formatDate(fin)}
-      </strong>
-    </p>
-
-    <p>
-      Prix :
-      <strong>${formatPrix(semaine.prix)} / semaine</strong>
-    </p>
-
-    <p>${message}</p>
-
-    ${bouton}
-  `;
-}
-
-
-/* =========================
-   AFFICHER LE CALENDRIER
-   ========================= */
-
-function afficherCalendrier() {
-
-  const annee = moisActuel.getFullYear();
-  const mois = moisActuel.getMonth();
-
-  /*
-    Titre
-  */
-
-  calendarMonth.textContent =
-    new Intl.DateTimeFormat("fr-FR", {
-      month: "long",
-      year: "numeric"
-    }).format(moisActuel);
-
-
-  /*
-    On vide le calendrier
-  */
-
-  calendarGrid.innerHTML = "";
-
-
-  /*
-    Premier jour du mois
-  */
-
-  const premierJour =
-    new Date(annee, mois, 1);
-
-  const dernierJour =
-    new Date(annee, mois + 1, 0);
-
-
-  /*
-    Conversion :
-    dimanche = 0
-    devient samedi = 6
-
-    afin d'avoir :
-    lundi → dimanche
-  */
-
-  let premierJourSemaine =
-    premierJour.getDay();
-
-  premierJourSemaine =
-    premierJourSemaine === 0
-      ? 6
-      : premierJourSemaine - 1;
-
-
-  /*
-    Cases vides avant le premier jour
-  */
-
-  for (
-    let i = 0;
-    i < premierJourSemaine;
-    i++
-  ) {
-
-    const cellule =
-      document.createElement("div");
-
-    cellule.className =
-      "calendar-day empty";
-
-    calendarGrid.appendChild(cellule);
-  }
-
-
-  /*
-    Jours du mois
-  */
-
-  for (
-    let jour = 1;
-    jour <= dernierJour.getDate();
-    jour++
-  ) {
-
-    const date =
-      new Date(annee, mois, jour);
-
-    date.setHours(12, 0, 0, 0);
-
-
-    const cellule =
-      document.createElement("div");
-
-    cellule.className =
-      "calendar-day";
-
-
-    /*
-      Numéro du jour
-    */
-
-    const numero =
-      document.createElement("div");
-
-    numero.className =
-      "calendar-date";
-
-    numero.textContent =
-      jour;
-
-    cellule.appendChild(numero);
-
-
-    /*
-      Semaine correspondante
-    */
-
-    const semaine =
-      trouverSemaine(date);
-
-
-    if (semaine) {
-
-      /*
-        Couleur de la case
-      */
-
-      cellule.classList.add(
-        semaine.statut
       );
 
+      window.location.href =
+        `mailto:Sci3mk@gmail.com?subject=${subject}&body=${body}`;
+
+      const status =
+        document.getElementById('reviewStatus');
+
+      if (status) {
+        status.textContent =
+          "Merci ! Votre messagerie va s'ouvrir — votre avis sera publié ici après lecture.";
+      }
+
+    });
+  }
+
+
+  // =========================
+  // CHARGEMENT DES AVIS
+  // =========================
+
+  fetch('avis.json')
+
+    .then(response => response.json())
+
+    .then(avis => {
+
+      const liste =
+        document.getElementById('reviewsList');
+
+      if (!liste) return;
+
+      liste.innerHTML = avis.map(a => `
+
+        <article class="review-card">
+
+          <div class="review-stars">
+            ${'★'.repeat(a.note)}${'☆'.repeat(5 - a.note)}
+          </div>
+
+          <p class="review-text">
+            « ${a.texte} »
+          </p>
+
+          <div class="review-author">
+            ${a.nom}
+          </div>
+
+        </article>
+
+      `).join('');
+
+    })
+
+    .catch(error => {
+
+      console.error(
+        'Impossible de charger les avis :',
+        error
+      );
+
+    });
+
+
+  // ==================================================
+  // CALENDRIER DES DISPONIBILITÉS
+  // ==================================================
+
+  let disponibilites = [];
+
+  // Premier mois affiché
+  let moisActuel = new Date(2026, 7, 1);
+
+
+  const calendarGrid =
+    document.getElementById('calendarGrid');
+
+  const calendarMonth =
+    document.getElementById('calendarMonth');
+
+  const calendarDetails =
+    document.getElementById('calendarDetails');
+
+  const prevMonth =
+    document.getElementById('prevMonth');
+
+  const nextMonth =
+    document.getElementById('nextMonth');
+
+
+  // =========================
+  // OUTILS
+  // =========================
+
+  function creerDate(dateString) {
+
+    return new Date(
+      dateString + 'T12:00:00'
+    );
+
+  }
+
+
+  function formatDate(date) {
+
+    return new Intl.DateTimeFormat(
+      'fr-FR',
+      {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric'
+      }
+    ).format(date);
+
+  }
+
+
+  function formatPrix(prix) {
+
+    return Number(prix)
+      .toLocaleString('fr-FR') + ' €';
+
+  }
+
+
+  // =========================
+  // TROUVER LA SEMAINE
+  // =========================
+
+  function trouverSemaine(date) {
+
+    const jour = new Date(date);
+
+    jour.setHours(12, 0, 0, 0);
+
+
+    /*
+      On cherche d'abord une période
+      renseignée dans disponibilites.json
+    */
+
+    const semaineExistante =
+      disponibilites.find(semaine => {
+
+        const debut =
+          creerDate(semaine.debut);
+
+        const fin =
+          creerDate(semaine.fin);
+
+        return jour >= debut && jour < fin;
+
+      });
+
+
+    /*
+      Si elle existe :
+      on utilise ses données.
+    */
+
+    if (semaineExistante) {
+
+      return semaineExistante;
+
+    }
+
+
+    /*
+      Sinon :
+      disponible automatiquement à 250 €.
+    */
+
+    const samedi =
+      new Date(jour);
+
+    const jourSemaine =
+      samedi.getDay();
+
+    let decalage;
+
+
+    if (jourSemaine === 6) {
+
+      decalage = 0;
+
+    } else if (jourSemaine === 0) {
+
+      decalage = -1;
+
+    } else {
+
+      decalage = 6 - jourSemaine;
+
+    }
+
+
+    samedi.setDate(
+      samedi.getDate() + decalage
+    );
+
+    samedi.setHours(12, 0, 0, 0);
+
+
+    const samediSuivant =
+      new Date(samedi);
+
+    samediSuivant.setDate(
+      samediSuivant.getDate() + 7
+    );
+
+
+    return {
+
+      debut:
+        samedi.toISOString().split('T')[0],
+
+      fin:
+        samediSuivant.toISOString().split('T')[0],
+
+      prix: 250,
+
+      statut: 'disponible',
+
+      automatique: true
+
+    };
+
+  }
+
+
+  // =========================
+  // DÉTAILS D'UNE SEMAINE
+  // =========================
+
+  function afficherDetails(semaine) {
+
+    if (!calendarDetails) return;
+
+
+    const debut =
+      creerDate(semaine.debut);
+
+    const fin =
+      creerDate(semaine.fin);
+
+
+    let titre = '';
+
+    let message = '';
+
+    let bouton = '';
+
+
+    if (semaine.statut === 'disponible') {
+
+      titre = '🟢 Disponible';
+
+      message =
+        'Cette semaine est disponible à la réservation.';
+
+      bouton = `
+        <a href="#reservation" class="calendar-book">
+          Demander à réserver
+        </a>
+      `;
+
+    }
+
+
+    else if (semaine.statut === 'reserve') {
+
+      titre = '🔴 Réservé';
+
+      message =
+        'Cette semaine n’est plus disponible.';
+
+    }
+
+
+    else if (semaine.statut === 'bloque') {
+
+      titre = '⚫ Indisponible';
+
+      message =
+        'Cette période est actuellement indisponible.';
+
+    }
+
+
+    calendarDetails.innerHTML = `
+
+      <h3>${titre}</h3>
+
+      <p>
+        <strong>
+          ${formatDate(debut)}
+          →
+          ${formatDate(fin)}
+        </strong>
+      </p>
+
+      <p>
+        Prix :
+        <strong>
+          ${formatPrix(semaine.prix)} / semaine
+        </strong>
+      </p>
+
+      <p>
+        ${message}
+      </p>
+
+      ${bouton}
+
+    `;
+
+  }
+
+
+  // =========================
+  // AFFICHER LE CALENDRIER
+  // =========================
+
+  function afficherCalendrier() {
+
+    if (
+      !calendarGrid ||
+      !calendarMonth
+    ) {
+      return;
+    }
+
+
+    const annee =
+      moisActuel.getFullYear();
+
+    const mois =
+      moisActuel.getMonth();
+
+
+    calendarMonth.textContent =
+      new Intl.DateTimeFormat(
+        'fr-FR',
+        {
+          month: 'long',
+          year: 'numeric'
+        }
+      ).format(moisActuel);
+
+
+    calendarGrid.innerHTML = '';
+
+
+    const premierJour =
+      new Date(annee, mois, 1);
+
+    const dernierJour =
+      new Date(annee, mois + 1, 0);
+
+
+    /*
+      Lundi = 0
+      Dimanche = 6
+    */
+
+    let premierJourSemaine =
+      premierJour.getDay();
+
+
+    premierJourSemaine =
+      premierJourSemaine === 0
+        ? 6
+        : premierJourSemaine - 1;
+
+
+    /*
+      Cases vides avant le 1er
+    */
+
+    for (
+      let i = 0;
+      i < premierJourSemaine;
+      i++
+    ) {
+
+      const cellule =
+        document.createElement('div');
+
+      cellule.className =
+        'calendar-day empty';
+
+      calendarGrid.appendChild(cellule);
+
+    }
+
+
+    /*
+      Création des jours
+    */
+
+    for (
+      let jour = 1;
+      jour <= dernierJour.getDate();
+      jour++
+    ) {
+
+      const date =
+        new Date(
+          annee,
+          mois,
+          jour
+        );
+
+      date.setHours(12, 0, 0, 0);
+
+
+      const cellule =
+        document.createElement('div');
+
+      cellule.className =
+        'calendar-day';
+
 
       /*
-        Point de couleur uniquement
-        sur le samedi.
+        Numéro du jour
       */
 
-      if (date.getDay() === 6) {
+      const numero =
+        document.createElement('div');
 
-        const point =
-          document.createElement("span");
+      numero.className =
+        'calendar-date';
 
-        point.className =
-          "calendar-dot " +
-          semaine.statut;
+      numero.textContent =
+        jour;
 
-        cellule.appendChild(point);
+      cellule.appendChild(numero);
+
+
+      /*
+        Semaine correspondante
+      */
+
+      const semaine =
+        trouverSemaine(date);
+
+
+      if (semaine) {
+
+        cellule.classList.add(
+          semaine.statut
+        );
 
 
         /*
-          Prix affiché
+          Point de couleur
+          uniquement le samedi.
         */
 
-        const prix =
-          document.createElement("div");
+        if (date.getDay() === 6) {
 
-        prix.className =
-          "calendar-price";
+          const point =
+            document.createElement('span');
 
-        prix.textContent =
+          point.className =
+            'calendar-dot ' +
+            semaine.statut;
+
+          cellule.appendChild(point);
+
+
+          /*
+            Prix
+          */
+
+          const prix =
+            document.createElement('div');
+
+          prix.className =
+            'calendar-price';
+
+          prix.textContent =
+            formatPrix(semaine.prix);
+
+          cellule.appendChild(prix);
+
+        }
+
+
+        /*
+          Cliquer sur un jour
+        */
+
+        cellule.addEventListener(
+          'click',
+          () => {
+
+            afficherDetails(
+              semaine
+            );
+
+          }
+        );
+
+
+        /*
+          Info au survol
+        */
+
+        cellule.title =
+          formatDate(
+            creerDate(semaine.debut)
+          )
+          + ' → ' +
+          formatDate(
+            creerDate(semaine.fin)
+          )
+          + ' · ' +
           formatPrix(semaine.prix);
 
-        cellule.appendChild(prix);
       }
 
 
-      /*
-        Cliquer sur n'importe quel jour
-        affiche la semaine complète.
-      */
+      calendarGrid.appendChild(
+        cellule
+      );
 
-      cellule.addEventListener(
-        "click",
-        function () {
+    }
 
-          afficherDetails(semaine);
+
+    /*
+      Impossible de revenir avant
+      août 2026.
+    */
+
+    const moisMinimum =
+      new Date(2026, 7, 1);
+
+
+    if (prevMonth) {
+
+      prevMonth.disabled =
+        moisActuel <= moisMinimum;
+
+    }
+
+  }
+
+
+  // =========================
+  // MOIS PRÉCÉDENT
+  // =========================
+
+  if (prevMonth) {
+
+    prevMonth.addEventListener(
+      'click',
+      () => {
+
+        moisActuel =
+          new Date(
+            moisActuel.getFullYear(),
+            moisActuel.getMonth() - 1,
+            1
+          );
+
+
+        afficherCalendrier();
+
+
+        if (calendarDetails) {
+
+          calendarDetails.innerHTML = `
+            <div class="calendar-details-empty">
+              Cliquez sur une date pour voir les détails.
+            </div>
+          `;
 
         }
-      );
 
+      }
+    );
 
-      /*
-        Info au survol
-      */
-
-      cellule.title =
-        formatDate(
-          creerDate(semaine.debut)
-        )
-        + " → "
-        +
-        formatDate(
-          creerDate(semaine.fin)
-        )
-        + " · "
-        +
-        formatPrix(semaine.prix);
-    }
-
-
-    calendarGrid.appendChild(cellule);
   }
 
 
-  /*
-    Impossible de revenir avant août 2026.
-  */
+  // =========================
+  // MOIS SUIVANT
+  // =========================
 
-  const moisMinimum =
-    new Date(2026, 7, 1);
+  if (nextMonth) {
 
-  prevMonth.disabled =
-    moisActuel <= moisMinimum;
-}
+    nextMonth.addEventListener(
+      'click',
+      () => {
+
+        moisActuel =
+          new Date(
+            moisActuel.getFullYear(),
+            moisActuel.getMonth() + 1,
+            1
+          );
 
 
-/* =========================
-   MOIS PRÉCÉDENT
-   ========================= */
+        afficherCalendrier();
 
-prevMonth.addEventListener(
-  "click",
-  function () {
 
-    moisActuel =
-      new Date(
-        moisActuel.getFullYear(),
-        moisActuel.getMonth() - 1,
-        1
-      );
+        if (calendarDetails) {
 
-    afficherCalendrier();
+          calendarDetails.innerHTML = `
+            <div class="calendar-details-empty">
+              Cliquez sur une date pour voir les détails.
+            </div>
+          `;
 
-    calendarDetails.innerHTML = `
-      <div class="calendar-details-empty">
-        Cliquez sur une date pour voir les détails.
-      </div>
-    `;
+        }
+
+      }
+    );
+
   }
-);
 
 
-/* =========================
-   MOIS SUIVANT
-   ========================= */
+  // =========================
+  // CHARGEMENT DES DISPONIBILITÉS
+  // =========================
 
-nextMonth.addEventListener(
-  "click",
-  function () {
+  if (calendarGrid) {
 
-    moisActuel =
-      new Date(
-        moisActuel.getFullYear(),
-        moisActuel.getMonth() + 1,
-        1
-      );
+    fetch('disponibilites.json')
 
-    afficherCalendrier();
+      .then(response => {
 
-    calendarDetails.innerHTML = `
-      <div class="calendar-details-empty">
-        Cliquez sur une date pour voir les détails.
-      </div>
-    `;
+        if (!response.ok) {
+
+          throw new Error(
+            'Impossible de charger disponibilites.json'
+          );
+
+        }
+
+        return response.json();
+
+      })
+
+      .then(data => {
+
+        disponibilites = data;
+
+        afficherCalendrier();
+
+      })
+
+      .catch(error => {
+
+        console.error(error);
+
+        calendarGrid.innerHTML = `
+          <p>
+            Impossible de charger les disponibilités.
+          </p>
+        `;
+
+      });
+
   }
-);
 
-
-/* =========================
-   CHARGEMENT DES DISPONIBILITÉS
-   ========================= */
-
-fetch("disponibilites.json")
-
-  .then(function(response) {
-
-    if (!response.ok) {
-      throw new Error(
-        "Impossible de charger disponibilites.json"
-      );
-    }
-
-    return response.json();
-
-  })
-
-  .then(function(data) {
-
-    disponibilites = data;
-
-    afficherCalendrier();
-
-  })
-
-  .catch(function(error) {
-
-    console.error(error);
-
-    calendarGrid.innerHTML = `
-      <p>
-        Impossible de charger les disponibilités.
-      </p>
-    `;
-  });
-  </script>
+</script>
   
 <script data-goatcounter="https://leroland.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
 
