@@ -395,24 +395,466 @@
 
 <svg class="peaks dark" viewBox="0 0 1200 46" preserveAspectRatio="none"><path d="M0,46 L0,30 L140,10 L230,34 L330,4 L420,30 L520,16 L620,36 L760,2 L880,28 L980,12 L1080,32 L1200,18 L1200,46 Z"/></svg>
 
-<section id="disponibilites">
-  <div class="wrap">
-    <div class="section-head">
-      <div class="eyebrow">Saison 2026 – 2027</div>
-      <h2>Disponibilités &amp; tarifs</h2>
-      <p>Semaines du samedi au samedi. Prix pour l'appartement entier, charges comprises.</p>
-    </div>
-    <div class="table-scroll reveal">
-      <table class="avail-table">
-        <thead>
-          <tr><th>Période</th><th>Arrivée</th><th>Départ</th><th>Prix</th><th>Statut</th></tr>
-        </thead>
-        <tbody id="availBody"></tbody>
-      </table>
-    </div>
-    <p class="avail-note">Hors saison (printemps, été, automne), le logement se loue également à la semaine, à partir de 250 € (300 € à partir de l'été 2027). Ménage de fin de séjour disponible en option (60 €). Dépôt de garantie demandé à la réservation. Détail complet transmis lors de l'échange direct.</p>
-  </div>
-</section>
+/* =========================
+   CALENDRIER DISPONIBILITÉS
+   ========================= */
+
+let disponibilites = [];
+
+/*
+  Mois affiché au chargement :
+  août 2026
+*/
+let moisActuel = new Date(2026, 7, 1);
+
+const calendarGrid = document.getElementById("calendarGrid");
+const calendarMonth = document.getElementById("calendarMonth");
+const calendarDetails = document.getElementById("calendarDetails");
+const prevMonth = document.getElementById("prevMonth");
+const nextMonth = document.getElementById("nextMonth");
+
+
+/* =========================
+   OUTILS DATES
+   ========================= */
+
+function creerDate(dateString) {
+  return new Date(dateString + "T12:00:00");
+}
+
+function formatDate(date) {
+  return new Intl.DateTimeFormat("fr-FR", {
+    day: "numeric",
+    month: "long",
+    year: "numeric"
+  }).format(date);
+}
+
+function formatPrix(prix) {
+  return Number(prix).toLocaleString("fr-FR") + " €";
+}
+
+
+/*
+  Retourne la semaine correspondant à une date.
+
+  Si une semaine existe dans disponibilites.json :
+  → on utilise ses informations.
+
+  Si elle n'existe pas :
+  → disponible automatiquement à 250 €.
+*/
+function trouverSemaine(date) {
+
+  const jour = new Date(date);
+  jour.setHours(12, 0, 0, 0);
+
+  const semaineExistante = disponibilites.find(semaine => {
+
+    const debut = creerDate(semaine.debut);
+    const fin = creerDate(semaine.fin);
+
+    return jour >= debut && jour < fin;
+  });
+
+  if (semaineExistante) {
+    return semaineExistante;
+  }
+
+  /*
+    Aucune information dans le tableau :
+    la semaine est donc automatiquement disponible
+    à 250 €.
+  */
+
+  /*
+    On calcule le samedi correspondant
+    à la semaine affichée.
+  */
+
+  const samedi = new Date(jour);
+
+  const jourSemaine = samedi.getDay();
+
+  /*
+    dimanche = 0
+    lundi = 1
+    ...
+    samedi = 6
+  */
+
+  const difference = jourSemaine === 0
+    ? -1
+    : 6 - jourSemaine;
+
+  samedi.setDate(samedi.getDate() + difference);
+  samedi.setHours(12, 0, 0, 0);
+
+  const samediSuivant = new Date(samedi);
+  samediSuivant.setDate(samediSuivant.getDate() + 7);
+
+  return {
+    debut: samedi.toISOString().split("T")[0],
+    fin: samediSuivant.toISOString().split("T")[0],
+    prix: 250,
+    statut: "disponible",
+    automatique: true
+  };
+}
+
+
+/* =========================
+   AFFICHAGE DES DÉTAILS
+   ========================= */
+
+function afficherDetails(semaine) {
+
+  const debut = creerDate(semaine.debut);
+  const fin = creerDate(semaine.fin);
+
+  let titre;
+  let message;
+  let bouton = "";
+
+  if (semaine.statut === "disponible") {
+
+    titre = "🟢 Disponible";
+
+    message =
+      "Cette semaine est disponible à la réservation.";
+
+    bouton = `
+      <a href="#reservation" class="calendar-book">
+        Demander à réserver
+      </a>
+    `;
+  }
+
+  else if (semaine.statut === "reserve") {
+
+    titre = "🔴 Réservé";
+
+    message =
+      "Cette semaine n'est plus disponible.";
+  }
+
+  else if (semaine.statut === "bloque") {
+
+    titre = "⚫ Indisponible";
+
+    message =
+      "Cette période est actuellement indisponible.";
+  }
+
+  calendarDetails.innerHTML = `
+
+    <h3>${titre}</h3>
+
+    <p>
+      <strong>
+        ${formatDate(debut)}
+        → 
+        ${formatDate(fin)}
+      </strong>
+    </p>
+
+    <p>
+      Prix :
+      <strong>${formatPrix(semaine.prix)} / semaine</strong>
+    </p>
+
+    <p>${message}</p>
+
+    ${bouton}
+
+  `;
+}
+
+
+/* =========================
+   AFFICHAGE DU CALENDRIER
+   ========================= */
+
+function afficherCalendrier() {
+
+  const annee = moisActuel.getFullYear();
+  const mois = moisActuel.getMonth();
+
+  /*
+    Titre du mois
+  */
+
+  calendarMonth.textContent =
+    new Intl.DateTimeFormat("fr-FR", {
+      month: "long",
+      year: "numeric"
+    }).format(moisActuel);
+
+
+  /*
+    On vide le calendrier
+  */
+
+  calendarGrid.innerHTML = "";
+
+
+  /*
+    Premier et dernier jour du mois
+  */
+
+  const premierJour = new Date(annee, mois, 1);
+  const dernierJour = new Date(annee, mois + 1, 0);
+
+
+  /*
+    On transforme dimanche = 0
+    en lundi = 0
+  */
+
+  let premierJourSemaine = premierJour.getDay();
+
+  premierJourSemaine =
+    premierJourSemaine === 0
+      ? 6
+      : premierJourSemaine - 1;
+
+
+  /*
+    Cases vides avant le premier jour
+  */
+
+  for (let i = 0; i < premierJourSemaine; i++) {
+
+    const cellule = document.createElement("div");
+
+    cellule.className =
+      "calendar-day empty";
+
+    calendarGrid.appendChild(cellule);
+  }
+
+
+  /*
+    Création des jours du mois
+  */
+
+  for (
+    let jour = 1;
+    jour <= dernierJour.getDate();
+    jour++
+  ) {
+
+    const date =
+      new Date(annee, mois, jour);
+
+    date.setHours(12, 0, 0, 0);
+
+
+    const cellule =
+      document.createElement("div");
+
+    cellule.className =
+      "calendar-day";
+
+
+    /*
+      Numéro du jour
+    */
+
+    const numero =
+      document.createElement("div");
+
+    numero.className =
+      "calendar-date";
+
+    numero.textContent = jour;
+
+    cellule.appendChild(numero);
+
+
+    /*
+      Recherche de la semaine
+    */
+
+    const semaine =
+      trouverSemaine(date);
+
+
+    if (semaine) {
+
+      /*
+        Couleur de la case
+      */
+
+      cellule.classList.add(
+        semaine.statut
+      );
+
+
+      /*
+        On met le point uniquement
+        sur le samedi.
+
+        C'est le jour d'arrivée
+        de tes locations.
+      */
+
+      if (date.getDay() === 6) {
+
+        const point =
+          document.createElement("span");
+
+        point.className =
+          "calendar-dot " +
+          semaine.statut;
+
+        cellule.appendChild(point);
+
+
+        /*
+          Prix visible sur ordinateur
+        */
+
+        const prix =
+          document.createElement("div");
+
+        prix.className =
+          "calendar-price";
+
+        prix.textContent =
+          formatPrix(semaine.prix);
+
+        cellule.appendChild(prix);
+      }
+
+
+      /*
+        Clic sur le jour
+      */
+
+      cellule.addEventListener(
+        "click",
+        function () {
+
+          afficherDetails(semaine);
+
+        }
+      );
+
+
+      /*
+        Survol ordinateur :
+        affichage rapide du prix
+      */
+
+      cellule.title =
+        `${formatDate(creerDate(semaine.debut))}
+        → ${formatDate(creerDate(semaine.fin))}
+        · ${formatPrix(semaine.prix)}`;
+    }
+
+
+    calendarGrid.appendChild(cellule);
+  }
+
+
+  /*
+    On désactive la flèche précédente
+    avant août 2026.
+  */
+
+  const moisMinimum =
+    new Date(2026, 7, 1);
+
+  prevMonth.disabled =
+    moisActuel <= moisMinimum;
+}
+
+
+/* =========================
+   NAVIGATION
+   ========================= */
+
+prevMonth.addEventListener(
+  "click",
+  function () {
+
+    moisActuel =
+      new Date(
+        moisActuel.getFullYear(),
+        moisActuel.getMonth() - 1,
+        1
+      );
+
+    afficherCalendrier();
+
+    calendarDetails.innerHTML = `
+      <div class="calendar-details-empty">
+        Cliquez sur une date pour voir les détails.
+      </div>
+    `;
+  }
+);
+
+
+nextMonth.addEventListener(
+  "click",
+  function () {
+
+    moisActuel =
+      new Date(
+        moisActuel.getFullYear(),
+        moisActuel.getMonth() + 1,
+        1
+      );
+
+    afficherCalendrier();
+
+    calendarDetails.innerHTML = `
+      <div class="calendar-details-empty">
+        Cliquez sur une date pour voir les détails.
+      </div>
+    `;
+  }
+);
+
+
+/* =========================
+   CHARGEMENT DES DONNÉES
+   ========================= */
+
+fetch("disponibilites.json")
+
+  .then(function(response) {
+
+    if (!response.ok) {
+      throw new Error(
+        "Impossible de charger disponibilites.json"
+      );
+    }
+
+    return response.json();
+
+  })
+
+  .then(function(data) {
+
+    disponibilites = data;
+
+    afficherCalendrier();
+
+  })
+
+  .catch(function(error) {
+
+    console.error(error);
+
+    calendarGrid.innerHTML = `
+      <p>
+        Impossible de charger les disponibilités.
+      </p>
+    `;
+  });
 
 <svg class="peaks dark" viewBox="0 0 1200 46" preserveAspectRatio="none"><path d="M0,46 L0,30 L140,10 L230,34 L330,4 L420,30 L520,16 L620,36 L760,2 L880,28 L980,12 L1080,32 L1200,18 L1200,46 Z"/></svg>
 
