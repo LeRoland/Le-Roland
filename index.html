@@ -857,35 +857,7 @@
   const io = new IntersectionObserver((entries) => {
     entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('in'); });
   }, { threshold: 0.12 });
-  document.querySelectorAll('.reveal').forEach(el => io.observe(el));
-
-  // Availability data
-  const weeks = [
-  
-    ["Début déc.", "05/12/2026", "12/12/2026", "350 €", "ok"],
-    ["Semaine 1", "12/12/2026", "19/12/2026", "350 €", "ok"],
-    ["Semaine 4", "02/01/2027", "09/01/2027", "350 €", "ok"],
-    ["Semaine 5", "09/01/2027", "16/01/2027", "350 €", "ok"],
-    ["Semaine 7", "23/01/2027", "30/01/2027", "350 €", "ok"],
-    ["Semaine 8", "30/01/2027", "06/02/2027", "450 €", "ok"],
-    ["Semaine 14", "13/03/2027", "20/03/2027", "350 €", "ok"],
-    ["Semaine 15", "20/03/2027", "27/03/2027", "350 €", "ok"],
-    ["Semaine 16", "27/03/2027", "03/04/2027", "350 €", "ok"],
-    ["Semaine 17", "03/04/2027", "09/04/2027", "350 €", "ok"],
-  ];
-  const labels = { ok: "Disponible", full: "Complet", ask: "Nous consulter" };
-  const tbody = document.getElementById('availBody');
-  weeks.forEach(([period, from, to, price, status]) => {
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td class="mono">${period}</td>
-      <td>${from}</td>
-      <td>${to}</td>
-      <td class="mono">${price}</td>
-      <td><span class="status ${status}"><span class="dot"></span>${labels[status]}</span></td>
-    `;
-    tbody.appendChild(tr);
-  });
+  document.querySelectorAll('.reveal').forEach(el => io.observe(
 
   // Booking form -> mailto
   document.getElementById('bookingForm').addEventListener('submit', function (e) {
