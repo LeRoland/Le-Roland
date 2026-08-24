@@ -8,19 +8,25 @@
   {
     "debut": "2026-08-18",
     "fin": "2026-08-24",
-    "prix": 290,
+    "prix": 250,
     "statut": "reserve"
   },
   {
     "debut": "2026-09-12",
     "fin": "2026-09-19",
-    "prix": 220,
+    "prix": 250,
     "statut": "reserve"
   },
   {
     "debut": "2026-09-19",
     "fin": "2026-09-26",
-    "prix": 220,
+    "prix": 250,
+    "statut": "reserve"
+  },
+  {
+    "debut": "2026-10-17",
+    "fin": "2026-10-24",
+    "prix": 250,
     "statut": "reserve"
   },
   {
@@ -38,7 +44,7 @@
   {
     "debut": "2026-12-19",
     "fin": "2026-12-26",
-    "prix": 350,
+    "prix": 3450,
     "statut": "bloque"
   },
   {
@@ -86,13 +92,13 @@
   {
     "debut": "2027-02-13",
     "fin": "2027-02-20",
-    "prix": 400,
+    "prix": 450,
     "statut": "reserve"
   },
   {
     "debut": "2027-02-20",
     "fin": "2027-02-27",
-    "prix": 400,
+    "prix": 450,
     "statut": "reserve"
   },
   {
