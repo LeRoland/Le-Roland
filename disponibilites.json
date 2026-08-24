@@ -106,30 +106,29 @@
     "fin": "2027-03-13",
     "prix": 350,
     "statut": "reserve"
-  }
+  },
   {
     "debut": "2027-03-13",
     "fin": "2027-03-20",
     "prix": 350,
     "statut": "disponible"
-  }
+  },
   {
     "debut": "2027-03-20",
     "fin": "2027-03-27",
     "prix": 350,
     "statut": "disponible"
-  }
+  },
   {
     "debut": "2027-03-27",
     "fin": "2027-04-03",
     "prix": 350,
     "statut": "disponible"
-  }
+  },
   {
     "debut": "2027-04-03",
     "fin": "2027-04-10",
     "prix": 350,
     "statut": "disponible"
   }
-  
 ]
