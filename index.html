@@ -287,6 +287,259 @@
     .reviews-layout{grid-template-columns:1fr;}
     .form-row{grid-template-columns:1fr;}
   }
+  /* =========================
+   CALENDRIER DISPONIBILITÉS
+   ========================= */
+
+.calendar-card {
+  max-width: 900px;
+  margin: 40px auto 0;
+  padding: 28px;
+  background: #fff;
+  border-radius: 20px;
+  box-shadow: 0 12px 40px rgba(0,0,0,.08);
+}
+
+.calendar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.calendar-arrow {
+  width: 46px;
+  height: 46px;
+  border: 0;
+  border-radius: 50%;
+  background: #26382d;
+  color: white;
+  font-size: 32px;
+  line-height: 1;
+  cursor: pointer;
+  transition: transform .2s, opacity .2s;
+}
+
+.calendar-arrow:hover {
+  transform: scale(1.08);
+}
+
+.calendar-arrow:disabled {
+  opacity: .3;
+  cursor: default;
+}
+
+.calendar-month {
+  font-size: 25px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+
+.calendar-subtitle {
+  margin-top: 5px;
+  font-size: 13px;
+  opacity: .65;
+}
+
+.calendar-legend {
+  display: flex;
+  justify-content: center;
+  gap: 25px;
+  flex-wrap: wrap;
+  margin: 20px 0 25px;
+  font-size: 14px;
+}
+
+.calendar-legend span {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.legend-dot {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.legend-dot.available {
+  background: #3b8f61;
+}
+
+.legend-dot.reserved {
+  background: #c94b4b;
+}
+
+.legend-dot.blocked {
+  background: #777;
+}
+
+.calendar-weekdays,
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+}
+
+.calendar-weekdays {
+  margin-bottom: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  text-align: center;
+  opacity: .65;
+}
+
+.calendar-grid {
+  gap: 6px;
+}
+
+.calendar-day {
+  min-height: 72px;
+  border: 1px solid #eee;
+  border-radius: 10px;
+  padding: 8px;
+  position: relative;
+  background: #fafafa;
+  cursor: default;
+  transition: .2s;
+}
+
+.calendar-day.empty {
+  background: transparent;
+  border-color: transparent;
+}
+
+.calendar-day.available {
+  cursor: pointer;
+  border-color: #cce5d5;
+  background: #f4faf6;
+}
+
+.calendar-day.reserved {
+  border-color: #f0cccc;
+  background: #fff6f6;
+  cursor: pointer;
+}
+
+.calendar-day.blocked {
+  border-color: #ddd;
+  background: #f2f2f2;
+  cursor: pointer;
+}
+
+.calendar-day:hover:not(.empty) {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(0,0,0,.08);
+}
+
+.calendar-date {
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.calendar-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  position: absolute;
+  right: 8px;
+  top: 9px;
+}
+
+.calendar-dot.available {
+  background: #3b8f61;
+}
+
+.calendar-dot.reserved {
+  background: #c94b4b;
+}
+
+.calendar-dot.blocked {
+  background: #777;
+}
+
+.calendar-price {
+  position: absolute;
+  left: 8px;
+  bottom: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  opacity: .75;
+}
+
+.calendar-details {
+  margin-top: 25px;
+  padding: 20px;
+  border-radius: 14px;
+  background: #f5f1e9;
+  min-height: 60px;
+}
+
+.calendar-details-empty {
+  text-align: center;
+  opacity: .65;
+  font-size: 14px;
+}
+
+.calendar-details h3 {
+  margin: 0 0 8px;
+}
+
+.calendar-details p {
+  margin: 5px 0;
+}
+
+.calendar-book {
+  display: inline-block;
+  margin-top: 12px;
+  padding: 11px 18px;
+  border-radius: 8px;
+  background: #26382d;
+  color: white;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+@media (max-width: 600px) {
+
+  .calendar-card {
+    padding: 15px;
+    border-radius: 15px;
+  }
+
+  .calendar-day {
+    min-height: 52px;
+    padding: 6px;
+  }
+
+  .calendar-month {
+    font-size: 19px;
+  }
+
+  .calendar-price {
+    display: none;
+  }
+
+  .calendar-dot {
+    width: 8px;
+    height: 8px;
+  }
+
+  .calendar-weekdays {
+    font-size: 10px;
+  }
+
+  .calendar-grid {
+    gap: 3px;
+  }
+
+  .calendar-legend {
+    gap: 12px;
+    font-size: 12px;
+  }
+}
 </style>
 </head>
 <body>
@@ -686,8 +939,258 @@ ${f.texte.value}`
     .catch(error => {
       console.error('Impossible de charger les avis :', error);
     });
-</script>
   
+</script>
+  /* =========================
+   CALENDRIER DISPONIBILITÉS
+   ========================= */
+
+let disponibilites = [];
+let moisActuel = new Date(2026, 7, 1); // Août 2026
+
+const calendarGrid = document.getElementById("calendarGrid");
+const calendarMonth = document.getElementById("calendarMonth");
+const calendarDetails = document.getElementById("calendarDetails");
+const prevMonth = document.getElementById("prevMonth");
+const nextMonth = document.getElementById("nextMonth");
+
+function dateLocale(date) {
+  return new Intl.DateTimeFormat("fr-FR", {
+    day: "numeric",
+    month: "long",
+    year: "numeric"
+  }).format(date);
+}
+
+function trouverSemaine(date) {
+
+  const jour = new Date(date);
+  jour.setHours(12, 0, 0, 0);
+
+  const semaine = disponibilites.find(semaine => {
+
+    const debut = new Date(semaine.debut + "T12:00:00");
+    const fin = new Date(semaine.fin + "T12:00:00");
+
+    return jour >= debut && jour < fin;
+  });
+
+  // Si aucune période particulière n'est renseignée,
+  // la semaine est automatiquement disponible à 250 €
+  if (!semaine) {
+
+    return {
+      debut: date.toISOString().split("T")[0],
+      fin: date.toISOString().split("T")[0],
+      prix: 250,
+      statut: "disponible",
+      automatique: true
+    };
+  }
+
+  return semaine;
+}
+
+  const jour = new Date(date);
+  jour.setHours(12, 0, 0, 0);
+
+  return disponibilites.find(semaine => {
+
+    const debut = new Date(semaine.debut + "T12:00:00");
+    const fin = new Date(semaine.fin + "T12:00:00");
+
+    return jour >= debut && jour < fin;
+  });
+}
+
+function afficherDetails(semaine) {
+
+  if (!semaine) {
+    calendarDetails.innerHTML = `
+      <div class="calendar-details-empty">
+        Aucune semaine renseignée pour cette date.
+      </div>
+    `;
+    return;
+  }
+
+  const debut = new Date(semaine.debut + "T12:00:00");
+  const fin = new Date(semaine.fin + "T12:00:00");
+
+  let titre = "";
+  let message = "";
+
+  if (semaine.statut === "disponible") {
+    titre = "🟢 Disponible";
+    message = "Cette semaine est disponible à la réservation.";
+  }
+
+  if (semaine.statut === "reserve") {
+    titre = "🔴 Réservé";
+    message = "Cette semaine n'est plus disponible.";
+  }
+
+  if (semaine.statut === "bloque") {
+    titre = "⚫ Indisponible";
+    message = "Cette période est bloquée.";
+  }
+
+  calendarDetails.innerHTML = `
+    <h3>${titre}</h3>
+
+    <p>
+      <strong>
+        ${dateLocale(debut)}
+        → 
+        ${dateLocale(fin)}
+      </strong>
+    </p>
+
+    <p>
+      Prix : <strong>${semaine.prix} € / semaine</strong>
+    </p>
+
+    <p>${message}</p>
+
+    ${
+      semaine.statut === "disponible"
+        ? `<a class="calendar-book"
+             href="#reservation">
+             Demander à réserver
+           </a>`
+        : ""
+    }
+  `;
+}
+
+function afficherCalendrier() {
+
+  const annee = moisActuel.getFullYear();
+  const mois = moisActuel.getMonth();
+
+  calendarMonth.textContent =
+    new Intl.DateTimeFormat("fr-FR", {
+      month: "long",
+      year: "numeric"
+    }).format(moisActuel);
+
+  calendarGrid.innerHTML = "";
+
+  const premierJour = new Date(annee, mois, 1);
+  const dernierJour = new Date(annee, mois + 1, 0);
+
+  /*
+    JS : dimanche = 0
+    Nous voulons lundi = 0
+  */
+  let premierJourSemaine = premierJour.getDay();
+  premierJourSemaine =
+    premierJourSemaine === 0 ? 6 : premierJourSemaine - 1;
+
+  for (let i = 0; i < premierJourSemaine; i++) {
+
+    const cellule = document.createElement("div");
+    cellule.className = "calendar-day empty";
+
+    calendarGrid.appendChild(cellule);
+  }
+
+  for (let jour = 1; jour <= dernierJour.getDate(); jour++) {
+
+    const date = new Date(annee, mois, jour);
+    date.setHours(12, 0, 0, 0);
+
+    const cellule = document.createElement("div");
+    cellule.className = "calendar-day";
+
+    const numero = document.createElement("div");
+    numero.className = "calendar-date";
+    numero.textContent = jour;
+
+    cellule.appendChild(numero);
+
+    const semaine = trouverSemaine(date);
+
+    if (semaine) {
+
+      cellule.classList.add(semaine.statut);
+
+      /*
+        On affiche le point uniquement
+        sur le samedi, qui correspond
+        à l'arrivée de la semaine.
+      */
+
+      if (date.getDay() === 6) {
+
+        const point = document.createElement("span");
+
+        point.className =
+          "calendar-dot " + semaine.statut;
+
+        cellule.appendChild(point);
+
+        const prix = document.createElement("div");
+
+        prix.className = "calendar-price";
+        prix.textContent = semaine.prix + " €";
+
+        cellule.appendChild(prix);
+      }
+
+      cellule.addEventListener("click", () => {
+        afficherDetails(semaine);
+      });
+    }
+
+    calendarGrid.appendChild(cellule);
+  }
+}
+
+prevMonth.addEventListener("click", () => {
+
+  moisActuel = new Date(
+    moisActuel.getFullYear(),
+    moisActuel.getMonth() - 1,
+    1
+  );
+
+  afficherCalendrier();
+});
+
+nextMonth.addEventListener("click", () => {
+
+  moisActuel = new Date(
+    moisActuel.getFullYear(),
+    moisActuel.getMonth() + 1,
+    1
+  );
+
+  afficherCalendrier();
+});
+
+
+fetch("disponibilites.json")
+  .then(response => response.json())
+  .then(data => {
+
+    disponibilites = data;
+    afficherCalendrier();
+
+  })
+  .catch(error => {
+
+    console.error(
+      "Impossible de charger les disponibilités :",
+      error
+    );
+
+    calendarGrid.innerHTML = `
+      <p>
+        Impossible de charger les disponibilités.
+      </p>
+    `;
+  });
 <script data-goatcounter="https://leroland.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
 
 </body>
