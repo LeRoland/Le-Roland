@@ -286,7 +286,8 @@
     .booking-grid{grid-template-columns:1fr;}
     .reviews-layout{grid-template-columns:1fr;}
     .form-row{grid-template-columns:1fr;}
-  
+  }
+
   /* =========================
    CALENDRIER DISPONIBILITÉS
    ========================= */
@@ -901,7 +902,7 @@ html {
   </div>
 </footer>
 
-<<script>
+<script>
   // =========================
   // HEADER
   // =========================
@@ -1514,9 +1515,16 @@ ${f.texte.value}`
 
       if (semaine) {
 
-        cellule.classList.add(
-          semaine.statut
-        );
+        // Classes CSS (available / reserved / blocked)
+        if (semaine.statut === 'disponible') {
+          cellule.classList.add('available');
+        } else if (semaine.statut === 'reserve') {
+          cellule.classList.add('reserved');
+        } else if (semaine.statut === 'bloque') {
+          cellule.classList.add('blocked');
+        } else {
+          cellule.classList.add(semaine.statut);
+        }
 
 
         /*
@@ -1708,6 +1716,8 @@ ${f.texte.value}`
         `;
 
       });
+
+  }
   
 </script>
   
