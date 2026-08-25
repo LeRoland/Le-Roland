@@ -1708,43 +1708,7 @@ ${f.texte.value}`
         `;
 
       });
-
-  }
-
-
-  // ==================================================
-  // BOUTON "VOIR LES DISPONIBILITÉS"
-  // ==================================================
-
-  document.querySelectorAll(
-    'a[href="#disponibilites"]'
-  ).forEach(bouton => {
-
-    bouton.addEventListener(
-      'click',
-      function(e) {
-
-        e.preventDefault();
-
-        const section =
-          document.getElementById(
-            'disponibilites'
-          );
-
-        if (section) {
-
-          section.scrollIntoView({
-            behavior: 'smooth',
-            block: 'start'
-          });
-
-        }
-
-      }
-    );
-
-  });
-
+  
 </script>
   
 <script data-goatcounter="https://leroland.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
