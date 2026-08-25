@@ -540,6 +540,69 @@
     font-size: 12px;
   }
 }
+    /* =========================
+   CALENDRIER - POINTS
+   ========================= */
+
+.calendar-day {
+  position: relative;
+  cursor: pointer;
+}
+
+.calendar-dot {
+  display: block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin: 6px auto 3px;
+}
+
+.calendar-dot.available {
+  background: #2e9b55;
+}
+
+.calendar-dot.reserved {
+  background: #d33b3b;
+}
+
+.calendar-dot.blocked {
+  background: #555;
+}
+
+.calendar-price {
+  font-size: 11px;
+  font-weight: 600;
+  text-align: center;
+  margin-top: 2px;
+}
+
+/* Petit effet visuel au survol ordinateur */
+.calendar-day:not(.empty):hover {
+  transform: translateY(-2px);
+}
+
+/* Navigation fluide vers les sections */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Sur ordinateur : calendrier bien lisible */
+@media (min-width: 769px) {
+
+  .calendar-day {
+    min-height: 82px;
+  }
+
+  .calendar-dot {
+    width: 12px;
+    height: 12px;
+  }
+
+  .calendar-price {
+    font-size: 12px;
+  }
+
+}
 </style>
 </head>
 <body>
@@ -838,16 +901,18 @@
   </div>
 </footer>
 
-<script>
+<<script>
   // =========================
-  // HEADER AU DÉFILEMENT
+  // HEADER
   // =========================
 
   const header = document.getElementById('siteHeader');
 
-  window.addEventListener('scroll', () => {
-    header.classList.toggle('scrolled', window.scrollY > 40);
-  });
+  if (header) {
+    window.addEventListener('scroll', () => {
+      header.classList.toggle('scrolled', window.scrollY > 40);
+    });
+  }
 
 
   // =========================
@@ -858,7 +923,6 @@
   const navToggle = document.getElementById('navToggle');
 
   if (nav && navToggle) {
-
     navToggle.addEventListener('click', () => {
       nav.classList.toggle('open');
     });
@@ -872,21 +936,16 @@
 
 
   // =========================
-  // ANIMATIONS AU DÉFILEMENT
+  // ANIMATIONS
   // =========================
 
   const io = new IntersectionObserver((entries) => {
-
     entries.forEach(e => {
-
       if (e.isIntersecting) {
         e.target.classList.add('in');
       }
-
     });
-
   }, { threshold: 0.12 });
-
 
   document.querySelectorAll('.reveal').forEach(el => {
     io.observe(el);
@@ -902,7 +961,7 @@
 
   if (bookingForm) {
 
-    bookingForm.addEventListener('submit', function (e) {
+    bookingForm.addEventListener('submit', function(e) {
 
       e.preventDefault();
 
@@ -934,7 +993,6 @@ ${f.message.value || "—"}`
         status.textContent =
           "Votre messagerie va s'ouvrir avec la demande pré-remplie.";
       }
-
     });
   }
 
@@ -948,7 +1006,7 @@ ${f.message.value || "—"}`
 
   if (reviewForm) {
 
-    reviewForm.addEventListener('submit', function (e) {
+    reviewForm.addEventListener('submit', function(e) {
 
       e.preventDefault();
 
@@ -976,19 +1034,16 @@ ${f.texte.value}`
         status.textContent =
           "Merci ! Votre messagerie va s'ouvrir — votre avis sera publié ici après lecture.";
       }
-
     });
   }
 
 
   // =========================
-  // CHARGEMENT DES AVIS
+  // AVIS PUBLIÉS
   // =========================
 
   fetch('avis.json')
-
     .then(response => response.json())
-
     .then(avis => {
 
       const liste =
@@ -997,9 +1052,7 @@ ${f.texte.value}`
       if (!liste) return;
 
       liste.innerHTML = avis.map(a => `
-
         <article class="review-card">
-
           <div class="review-stars">
             ${'★'.repeat(a.note)}${'☆'.repeat(5 - a.note)}
           </div>
@@ -1011,30 +1064,24 @@ ${f.texte.value}`
           <div class="review-author">
             ${a.nom}
           </div>
-
         </article>
-
       `).join('');
 
     })
-
     .catch(error => {
-
       console.error(
         'Impossible de charger les avis :',
         error
       );
-
     });
 
 
   // ==================================================
-  // CALENDRIER DES DISPONIBILITÉS
+  // CALENDRIER
   // ==================================================
 
   let disponibilites = [];
 
-  // Premier mois affiché
   let moisActuel = new Date(2026, 7, 1);
 
 
@@ -1055,15 +1102,11 @@ ${f.texte.value}`
 
 
   // =========================
-  // OUTILS
+  // DATES
   // =========================
 
   function creerDate(dateString) {
-
-    return new Date(
-      dateString + 'T12:00:00'
-    );
-
+    return new Date(dateString + 'T12:00:00');
   }
 
 
@@ -1089,9 +1132,9 @@ ${f.texte.value}`
   }
 
 
-  // =========================
-  // TROUVER LA SEMAINE
-  // =========================
+  // ==================================================
+  // SEMAINE CORRESPONDANTE
+  // ==================================================
 
   function trouverSemaine(date) {
 
@@ -1101,11 +1144,11 @@ ${f.texte.value}`
 
 
     /*
-      On cherche d'abord une période
-      renseignée dans disponibilites.json
+      Cherche une période enregistrée
+      dans disponibilites.json
     */
 
-    const semaineExistante =
+    const existante =
       disponibilites.find(semaine => {
 
         const debut =
@@ -1119,44 +1162,36 @@ ${f.texte.value}`
       });
 
 
-    /*
-      Si elle existe :
-      on utilise ses données.
-    */
-
-    if (semaineExistante) {
-
-      return semaineExistante;
-
+    if (existante) {
+      return existante;
     }
 
 
     /*
-      Sinon :
-      disponible automatiquement à 250 €.
+      Si aucune période n'est renseignée,
+      on crée automatiquement une semaine
+      samedi → samedi.
     */
 
     const samedi =
       new Date(jour);
 
+
     const jourSemaine =
       samedi.getDay();
+
 
     let decalage;
 
 
     if (jourSemaine === 6) {
-
       decalage = 0;
-
-    } else if (jourSemaine === 0) {
-
+    }
+    else if (jourSemaine === 0) {
       decalage = -1;
-
-    } else {
-
+    }
+    else {
       decalage = 6 - jourSemaine;
-
     }
 
 
@@ -1164,15 +1199,42 @@ ${f.texte.value}`
       samedi.getDate() + decalage
     );
 
+
     samedi.setHours(12, 0, 0, 0);
 
 
-    const samediSuivant =
+    const fin =
       new Date(samedi);
 
-    samediSuivant.setDate(
-      samediSuivant.getDate() + 7
+
+    fin.setDate(
+      fin.getDate() + 7
     );
+
+
+    /*
+      TARIF ÉTÉ 2027
+
+      Du 3 juillet au 4 septembre :
+      300 €
+    */
+
+    const debutEte =
+      new Date('2027-07-03T12:00:00');
+
+    const finEte =
+      new Date('2027-09-04T12:00:00');
+
+
+    let prix = 250;
+
+
+    if (
+      samedi >= debutEte &&
+      samedi < finEte
+    ) {
+      prix = 300;
+    }
 
 
     return {
@@ -1181,9 +1243,9 @@ ${f.texte.value}`
         samedi.toISOString().split('T')[0],
 
       fin:
-        samediSuivant.toISOString().split('T')[0],
+        fin.toISOString().split('T')[0],
 
-      prix: 250,
+      prix: prix,
 
       statut: 'disponible',
 
@@ -1194,9 +1256,9 @@ ${f.texte.value}`
   }
 
 
-  // =========================
-  // DÉTAILS D'UNE SEMAINE
-  // =========================
+  // ==================================================
+  // DÉTAILS
+  // ==================================================
 
   function afficherDetails(semaine) {
 
@@ -1211,9 +1273,7 @@ ${f.texte.value}`
 
 
     let titre = '';
-
     let message = '';
-
     let bouton = '';
 
 
@@ -1225,7 +1285,8 @@ ${f.texte.value}`
         'Cette semaine est disponible à la réservation.';
 
       bouton = `
-        <a href="#reservation" class="calendar-book">
+        <a href="#reserver"
+           class="calendar-book">
           Demander à réserver
         </a>
       `;
@@ -1268,7 +1329,8 @@ ${f.texte.value}`
       <p>
         Prix :
         <strong>
-          ${formatPrix(semaine.prix)} / semaine
+          ${formatPrix(semaine.prix)}
+          / semaine
         </strong>
       </p>
 
@@ -1280,19 +1342,50 @@ ${f.texte.value}`
 
     `;
 
+
+    /*
+      Le bouton fonctionne également
+      après avoir été créé dynamiquement.
+    */
+
+    const boutonReservation =
+      calendarDetails.querySelector('.calendar-book');
+
+    if (boutonReservation) {
+
+      boutonReservation.addEventListener(
+        'click',
+        function(e) {
+
+          e.preventDefault();
+
+          const reservation =
+            document.getElementById('reserver');
+
+          if (reservation) {
+
+            reservation.scrollIntoView({
+              behavior: 'smooth',
+              block: 'start'
+            });
+
+          }
+
+        }
+      );
+
+    }
+
   }
 
 
-  // =========================
-  // AFFICHER LE CALENDRIER
-  // =========================
+  // ==================================================
+  // AFFICHAGE CALENDRIER
+  // ==================================================
 
   function afficherCalendrier() {
 
-    if (
-      !calendarGrid ||
-      !calendarMonth
-    ) {
+    if (!calendarGrid || !calendarMonth) {
       return;
     }
 
@@ -1318,15 +1411,23 @@ ${f.texte.value}`
 
 
     const premierJour =
-      new Date(annee, mois, 1);
+      new Date(
+        annee,
+        mois,
+        1
+      );
+
 
     const dernierJour =
-      new Date(annee, mois + 1, 0);
+      new Date(
+        annee,
+        mois + 1,
+        0
+      );
 
 
     /*
-      Lundi = 0
-      Dimanche = 6
+      Lundi = première colonne
     */
 
     let premierJourSemaine =
@@ -1340,7 +1441,7 @@ ${f.texte.value}`
 
 
     /*
-      Cases vides avant le 1er
+      Cases vides
     */
 
     for (
@@ -1361,7 +1462,7 @@ ${f.texte.value}`
 
 
     /*
-      Création des jours
+      Jours
     */
 
     for (
@@ -1388,7 +1489,7 @@ ${f.texte.value}`
 
 
       /*
-        Numéro du jour
+        Numéro
       */
 
       const numero =
@@ -1404,7 +1505,7 @@ ${f.texte.value}`
 
 
       /*
-        Semaine correspondante
+        Semaine
       */
 
       const semaine =
@@ -1419,58 +1520,65 @@ ${f.texte.value}`
 
 
         /*
-          Point de couleur
-          uniquement le samedi.
+          POINT VERT / ROUGE / NOIR
+          
+          Visible directement sur le calendrier.
         */
 
-        if (date.getDay() === 6) {
+        const point =
+          document.createElement('span');
 
-          const point =
-            document.createElement('span');
-
-          point.className =
-            'calendar-dot ' +
-            semaine.statut;
-
-          cellule.appendChild(point);
+        point.className =
+          'calendar-dot';
 
 
-          /*
-            Prix
-          */
+        if (semaine.statut === 'disponible') {
+          point.classList.add('available');
+        }
 
-          const prix =
-            document.createElement('div');
+        else if (semaine.statut === 'reserve') {
+          point.classList.add('reserved');
+        }
 
-          prix.className =
-            'calendar-price';
-
-          prix.textContent =
-            formatPrix(semaine.prix);
-
-          cellule.appendChild(prix);
-
+        else if (semaine.statut === 'bloque') {
+          point.classList.add('blocked');
         }
 
 
+        cellule.appendChild(point);
+
+
         /*
-          Cliquer sur un jour
+          Le prix est également visible
+          directement.
+        */
+
+        const prix =
+          document.createElement('div');
+
+        prix.className =
+          'calendar-price';
+
+        prix.textContent =
+          formatPrix(semaine.prix);
+
+        cellule.appendChild(prix);
+
+
+        /*
+          Clic sur la journée
         */
 
         cellule.addEventListener(
           'click',
           () => {
-
-            afficherDetails(
-              semaine
-            );
-
+            afficherDetails(semaine);
           }
         );
 
 
         /*
-          Info au survol
+          Survol ordinateur
         */
 
         cellule.title =
@@ -1495,27 +1603,25 @@ ${f.texte.value}`
 
 
     /*
-      Impossible de revenir avant
-      août 2026.
+      Bouton précédent
     */
-
-    const moisMinimum =
-      new Date(2026, 7, 1);
-
 
     if (prevMonth) {
 
+      const minimum =
+        new Date(2026, 7, 1);
+
       prevMonth.disabled =
-        moisActuel <= moisMinimum;
+        moisActuel <= minimum;
 
     }
 
   }
 
 
-  // =========================
+  // ==================================================
   // MOIS PRÉCÉDENT
-  // =========================
+  // ==================================================
 
   if (prevMonth) {
 
@@ -1530,19 +1636,7 @@ ${f.texte.value}`
             1
           );
 
-
         afficherCalendrier();
-
-
-        if (calendarDetails) {
-
-          calendarDetails.innerHTML = `
-            <div class="calendar-details-empty">
-              Cliquez sur une date pour voir les détails.
-            </div>
-          `;
-
-        }
 
       }
     );
@@ -1550,9 +1644,9 @@ ${f.texte.value}`
   }
 
 
-  // =========================
+  // ==================================================
   // MOIS SUIVANT
-  // =========================
+  // ==================================================
 
   if (nextMonth) {
 
@@ -1567,19 +1661,7 @@ ${f.texte.value}`
             1
           );
 
-
         afficherCalendrier();
-
-
-        if (calendarDetails) {
-
-          calendarDetails.innerHTML = `
-            <div class="calendar-details-empty">
-              Cliquez sur une date pour voir les détails.
-            </div>
-          `;
-
-        }
 
       }
     );
@@ -1587,9 +1669,9 @@ ${f.texte.value}`
   }
 
 
-  // =========================
-  // CHARGEMENT DES DISPONIBILITÉS
-  // =========================
+  // ==================================================
+  // CHARGEMENT JSON
+  // ==================================================
 
   if (calendarGrid) {
 
@@ -1598,11 +1680,9 @@ ${f.texte.value}`
       .then(response => {
 
         if (!response.ok) {
-
           throw new Error(
             'Impossible de charger disponibilites.json'
           );
-
         }
 
         return response.json();
@@ -1630,6 +1710,40 @@ ${f.texte.value}`
       });
 
   }
+
+
+  // ==================================================
+  // BOUTON "VOIR LES DISPONIBILITÉS"
+  // ==================================================
+
+  document.querySelectorAll(
+    'a[href="#disponibilites"]'
+  ).forEach(bouton => {
+
+    bouton.addEventListener(
+      'click',
+      function(e) {
+
+        e.preventDefault();
+
+        const section =
+          document.getElementById(
+            'disponibilites'
+          );
+
+        if (section) {
+
+          section.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start'
+          });
+
+        }
+
+      }
+    );
+
+  });
 
 </script>
   
