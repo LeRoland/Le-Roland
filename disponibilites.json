@@ -45,7 +45,7 @@
     "debut": "2026-12-19",
     "fin": "2026-12-26",
     "prix": 450,
-    "statut": "bloque"
+    "statut": "reserve"
   },
   {
     "debut": "2026-12-26",
@@ -81,7 +81,7 @@
     "debut": "2027-01-30",
     "fin": "2027-02-06",
     "prix": 450,
-    "statut": "disponible"
+    "statut": "reserve"
   },
   {
     "debut": "2027-02-06",
